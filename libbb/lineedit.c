@@ -1876,7 +1876,7 @@ static void parse_and_put_prompt(const char *prmt_ptr)
 					if (c == 'w')
 						break;
 					cp = strrchr(pbuf, '/');
-					if (cp != NULL && cp != pbuf)
+					if (cp)
 						pbuf = (char*)cp + 1;
 					break;
 # endif
