@@ -344,7 +344,7 @@ struct globals {
 		struct sockaddr_in6 sin6;
 #endif
 	} pingaddr;
-	char rcvd_tbl[MAX_DUP_CHK / 8];
+	unsigned char rcvd_tbl[MAX_DUP_CHK / 8];
 } FIX_ALIASING;
 #define G (*(struct globals*)&bb_common_bufsiz1)
 #define pingsock     (G.pingsock    )
@@ -376,13 +376,11 @@ void BUG_ping_globals_too_big(void);
 } while (0)
 
 
-#define A(bit)		rcvd_tbl[(bit)>>3]	/* identify byte in array */
-#define B(bit)		(1 << ((bit) & 0x07))	/* identify bit in byte */
-#define SET(bit)	(A(bit) |= B(bit))
-#define CLR(bit)	(A(bit) &= (~B(bit)))
-#define TST(bit)	(A(bit) & B(bit))
-
-/**************************************************************************/
+#define BYTE(bit)	rcvd_tbl[(bit)>>3]
+#define MASK(bit)	(1 << ((bit) & 7))
+#define SET(bit)	(BYTE(bit) |= MASK(bit))
+#define CLR(bit)	(BYTE(bit) &= (~MASK(bit)))
+#define TST(bit)	(BYTE(bit) & MASK(bit))
 
 static void print_stats_and_exit(int junk) NORETURN;
 static void print_stats_and_exit(int junk UNUSED_PARAM)
@@ -552,10 +550,9 @@ static void unpack_tail(int sz, uint32_t *tp,
 		const char *from_str,
 		uint16_t recv_seq, int ttl)
 {
+	unsigned char *b, m;
 	const char *dupmsg = " (DUP!)";
 	unsigned triptime = 0;
-
-	++G.nreceived;
 
 	if (tp) {
 		/* (int32_t) cast is for hypothetical 64-bit unsigned */
@@ -568,11 +565,15 @@ static void unpack_tail(int sz, uint32_t *tp,
 			tmax = triptime;
 	}
 
-	if (TST(recv_seq % MAX_DUP_CHK)) {
+	b = &BYTE(recv_seq % MAX_DUP_CHK);
+	m = MASK(recv_seq % MAX_DUP_CHK);
+	/*if TST(recv_seq % MAX_DUP_CHK):*/
+	if (*b & m) {
 		++G.nrepeats;
-		--G.nreceived;
 	} else {
-		SET(recv_seq % MAX_DUP_CHK);
+		/*SET(recv_seq % MAX_DUP_CHK):*/
+		*b |= m;
+		++G.nreceived;
 		dupmsg += 7;
 	}
 
