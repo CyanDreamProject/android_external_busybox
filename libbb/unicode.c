@@ -45,8 +45,15 @@ void FAST_FUNC reinit_unicode(const char *LANG)
 
 void FAST_FUNC init_unicode(VOID)
 {
+	/* Some people set only $LC_CTYPE, not $LC_ALL, because they want
+	 * only Unicode to be activated on their system, not the whole
+	 * shebang of wrong decimal points, strange date formats and so on.
+	 *
+	 * TODO? Maybe we should use LC_CTYPE instead of LC_ALL in setlocale()?
+	 */
 	if (unicode_status == UNICODE_UNKNOWN) {
 		char *s = getenv("LC_ALL");
+		if (!s) s = getenv("LC_CTYPE");
 		if (!s) s = getenv("LANG");
 		reinit_unicode(s);
 	}
@@ -69,6 +76,7 @@ void FAST_FUNC init_unicode(VOID)
 {
 	if (unicode_status == UNICODE_UNKNOWN) {
 		char *s = getenv("LC_ALL");
+		if (!s) s = getenv("LC_CTYPE");
 		if (!s) s = getenv("LANG");
 		reinit_unicode(s);
 	}
